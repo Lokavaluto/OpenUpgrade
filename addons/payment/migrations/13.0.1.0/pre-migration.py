@@ -6,29 +6,29 @@ from openupgradelib import openupgrade
 from psycopg2 import sql
 
 _tables_rename = [
-    ("account_invoice_transaction_rel", "openupgrade_legacy_13_0_ait_rel")
+    ("account_invoice_transaction_rel", "openupgrade_legacy_13_0_ait_rel"),
 ]
 
 _column_renames = {
-    'payment_acquirer': [('website_published', None)],
+    "payment_acquirer": [("website_published", None)],
 }
 
 _column_copies = {
-    'payment_acquirer': [('environment', None, None)],  # Preserve source value
+    "payment_acquirer": [("environment", None, None)],  # Preserve source value
 }
 
 _field_renames = [
-    ('payment.acquirer', 'payment_acquirer', 'image_medium', 'image_128'),
-    ('payment.acquirer', 'payment_acquirer', 'environment', 'state'),
+    # ('payment.acquirer', 'payment_acquirer', 'image_medium', 'image_128'),
+    # ("payment.acquirer", "payment_acquirer", "environment", "state"),
 ]
 
 _xmlid_renames = [
-    ('payment.payment_acquirer_ogone', 'payment.payment_acquirer_ingenico'),
+    ("payment.payment_acquirer_ogone", "payment.payment_acquirer_ingenico"),
 ]
 
 
-def map_payment_acquirer_state(cr):
-    """ Adapt payment acquirer states to new definition.
+def map_payment_acquirer_state(cr) -> None:
+    """Adapt payment acquirer states to new definition.
 
     Done here for avoiding possible errors due to invalid state value when
     updating records.
@@ -38,27 +38,27 @@ def map_payment_acquirer_state(cr):
         sql.SQL(
             """UPDATE payment_acquirer
             SET state = CASE WHEN {} THEN 'enabled' ELSE 'disabled' END
-            WHERE {} = 'prod'"""
+            WHERE {} = 'prod'""",
         ).format(
-            sql.Identifier(openupgrade.get_legacy_name('website_published')),
-            sql.Identifier(openupgrade.get_legacy_name('environment'))
-        )
+            sql.Identifier(openupgrade.get_legacy_name("website_published")),
+            sql.Identifier(openupgrade.get_legacy_name("environment")),
+        ),
     )
     openupgrade.logged_query(
         cr,
         sql.SQL(
             """UPDATE payment_acquirer
             SET state = 'disabled'
-            WHERE NOT {} AND {} = 'test'"""
+            WHERE NOT {} AND {} = 'test'""",
         ).format(
-            sql.Identifier(openupgrade.get_legacy_name('website_published')),
-            sql.Identifier(openupgrade.get_legacy_name('environment'))
-        )
+            sql.Identifier(openupgrade.get_legacy_name("website_published")),
+            sql.Identifier(openupgrade.get_legacy_name("environment")),
+        ),
     )
 
 
 @openupgrade.migrate(use_env=True)
-def migrate(env, version):
+def migrate(env, version) -> None:
     openupgrade.copy_columns(env.cr, _column_copies)
     openupgrade.rename_tables(env.cr, _tables_rename)
     openupgrade.rename_fields(env, _field_renames)
